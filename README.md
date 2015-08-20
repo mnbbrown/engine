@@ -24,7 +24,7 @@ import (
 
 func main() {
     e := engine.NewRouter()
-    e.Get("/", func(rw *http.ResponseWriter, req *http.Request) {
+    e.Get("/", func(rw http.ResponseWriter, req *http.Request) {
         fmt.Fprint(rw, "Hello World!")
     })
     http.ListenAndServe(":8080", e)
