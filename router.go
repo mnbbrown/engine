@@ -77,7 +77,7 @@ func (r *Router) UseHandler(handler http.Handler) {
 }
 
 func (r *Router) Next(handler http.Handler) {
-	r.mux.NotFound = handler.ServeHTTP
+	r.mux.NotFound = http.HandlerFunc(handler.ServeHTTP)
 }
 
 func (r *Router) Handle(method, path string, handler http.Handler, middleware ...MiddlewareFunc) {
