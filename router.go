@@ -142,28 +142,38 @@ func wrap(handler http.Handler) httprouter.Handle {
 	}
 }
 
-type StatusStoringResponseWriter struct {
+type ResponseWriter struct {
 	status int
+	size   int
 	http.ResponseWriter
 }
 
-func (s *StatusStoringResponseWriter) Status() int {
+func (s *ResponseWriter) Status() int {
 	return s.status
 }
 
-func (s *StatusStoringResponseWriter) Header() http.Header {
+func (s *ResponseWriter) Length() int {
+	return s.size
+}
+
+func (s *ResponseWriter) Header() http.Header {
 	return s.ResponseWriter.Header()
 }
 
-func (s *StatusStoringResponseWriter) Write(data []byte) (int, error) {
-	return s.ResponseWriter.Write(data)
+func (s *ResponseWriter) Write(data []byte) (int, error) {
+	if s.status == 0 {
+		s.WriteHeader(200)
+	}
+	n, err := s.ResponseWriter.Write(data)
+	s.size += n
+	return n, err
 }
 
-func (s *StatusStoringResponseWriter) WriteHeader(statusCode int) {
+func (s *ResponseWriter) WriteHeader(statusCode int) {
 	s.status = statusCode
 	s.ResponseWriter.WriteHeader(statusCode)
 }
 
-func NewStatusStoringResponseWriter(rw http.ResponseWriter) *StatusStoringResponseWriter {
-	return &StatusStoringResponseWriter{200, rw}
+func NewResponseWriter(rw http.ResponseWriter) *ResponseWriter {
+	return &ResponseWriter{ResponseWriter: rw, status: 200}
 }
