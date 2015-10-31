@@ -2,6 +2,7 @@ package engine
 
 import (
 	"github.com/julienschmidt/httprouter"
+	"github.com/mnbbrown/logger"
 	"golang.org/x/net/context"
 	"net/http"
 	"path"
@@ -16,6 +17,7 @@ type Router struct {
 	mux          *httprouter.Router
 	absolutePath string
 	middleware   []MiddlewareFunc
+	logger       *logger.Logger
 }
 
 func (r *Router) ListMiddleware() (mi []string) {
@@ -30,17 +32,25 @@ func NewRouter() *Router {
 	return &Router{mux: r}
 }
 
+func (r *Router) UseLogger(l *logger.Logger) {
+	r.logger = l
+}
+
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	r.mux.ServeHTTP(rw, req)
 }
 
 func (r *Router) SubRouter(relativePath string, middleware ...MiddlewareFunc) *Router {
 	middleware = append(r.middleware, middleware...)
-	return &Router{
+	sr := &Router{
 		mux:          r.mux,
 		absolutePath: relativePath,
 		middleware:   middleware,
 	}
+	if r.logger != nil {
+		sr.UseLogger(r.logger)
+	}
+	return sr
 }
 
 func (r *Router) Use(middleware ...MiddlewareFunc) {
@@ -92,6 +102,9 @@ func (r *Router) Handle(method, path string, handler http.Handler, middleware ..
 }
 
 func (r *Router) HandleFunc(method, path string, handler func(http.ResponseWriter, *http.Request), middleware ...MiddlewareFunc) {
+	if r.logger != nil {
+		r.logger.Printf("%s %s%s\n", method, r.absolutePath, path)
+	}
 	r.Handle(method, path, http.HandlerFunc(handler), middleware...)
 }
 
