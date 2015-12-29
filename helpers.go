@@ -13,3 +13,10 @@ func JSON(rw http.ResponseWriter, v interface{}, code int) {
 	enc := json.NewEncoder(rw)
 	enc.Encode(v)
 }
+
+func JSONError(rw http.ResponseWriter, err error, code int) {
+	JSON(rw, J{
+		"status_code": code,
+		"message":     err.Error(),
+	}, code)
+}

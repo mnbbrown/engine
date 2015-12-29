@@ -32,6 +32,12 @@ func NewRouter() *Router {
 	return &Router{mux: r}
 }
 
+func NewDefaultRouter() *Router {
+	router := NewRouter()
+	router.Use(MetadataMiddleware)
+	return router
+}
+
 func (r *Router) UseLogger(l *logger.Logger) {
 	r.logger = l
 }
@@ -102,9 +108,6 @@ func (r *Router) Handle(method, path string, handler http.Handler, middleware ..
 }
 
 func (r *Router) HandleFunc(method, path string, handler func(http.ResponseWriter, *http.Request), middleware ...MiddlewareFunc) {
-	if r.logger != nil {
-		r.logger.Printf("%s %s%s\n", method, r.absolutePath, path)
-	}
 	r.Handle(method, path, http.HandlerFunc(handler), middleware...)
 }
 

@@ -1,12 +1,30 @@
 package engine
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/dchest/uniuri"
-	"log"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 )
+
+func Recover(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if err := recover(); err != nil {
+				buf := make([]byte, 1<<16)
+				stackSize := runtime.Stack(buf, true)
+				log.Debugf("%s", string(buf[0:stackSize]))
+				JSON(rw, &J{
+					"status_code": http.StatusInternalServerError,
+					"message":     "Oops. Something went wrong",
+				}, http.StatusInternalServerError)
+			}
+		}()
+		next.ServeHTTP(rw, req)
+	})
+}
 
 func RequestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
