@@ -1,40 +1,21 @@
-package engine
+package metadata
 
 import (
 	"errors"
-	log "github.com/Sirupsen/logrus"
-	"github.com/dchest/uniuri"
 	"net/http"
 	"runtime"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/dchest/uniuri"
+	"github.com/mnbbrown/engine"
 )
-
-type RequestMetadata struct {
-	RequestID string
-	Method    string
-	Path      string
-	Status    int
-	IP        string
-	Size      int
-	Latency   time.Duration
-	StartTime time.Time
-}
-
-func (r *RequestMetadata) Fields() log.Fields {
-	return log.Fields{
-		"request_id": r.RequestID,
-	}
-}
-
-func (r *RequestMetadata) Logger() *log.Entry {
-	return log.WithFields(r.Fields())
-}
 
 type key int
 
 const metadataCtxKey key = 0
 
-func MetadataMiddleware(next http.Handler) http.Handler {
+func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 
 		start := time.Now().UTC()
@@ -57,23 +38,23 @@ func MetadataMiddleware(next http.Handler) http.Handler {
 		}
 
 		// Set context
-		GetContext(req).Set(metadataCtxKey, metadata)
+		engine.GetContext(req).Set(metadataCtxKey, metadata)
 
 		// Use StatusStoringRequest to keep a track of the request status.
-		rw = NewResponseWriter(rw)
+		rw = engine.NewResponseWriter(rw)
 
 		defer func() {
 			if err := recover(); err != nil {
 				buf := make([]byte, 1<<16)
 				stackSize := runtime.Stack(buf, true)
 				metadata.Logger().Debugf("%s", string(buf[0:stackSize]))
-				JSONError(rw, errors.New("Ooops. Something went wrong on our end"), http.StatusInternalServerError)
+				engine.JSONError(rw, errors.New("Ooops. Something went wrong on our end"), http.StatusInternalServerError)
 			}
 
-			resp := rw.(*ResponseWriter)
+			resp := rw.(*engine.ResponseWriter)
 			metadata.Status = resp.Status()
 			metadata.Size = resp.Length()
-			statusColor := colorForStatus(metadata.Status)
+			statusColor := engine.ColourForStatus(metadata.Status)
 			metadata.Latency = time.Since(start)
 
 			log.WithFields(metadata.Fields()).WithFields(log.Fields{
@@ -83,7 +64,7 @@ func MetadataMiddleware(next http.Handler) http.Handler {
 				"size":      metadata.Size,
 				"latency":   metadata.Latency,
 				"status":    metadata.Status,
-			}).Printf("%s\t| %s | %s%d%s | %v | %s", metadata.Path, metadata.Method, statusColor, metadata.Status, reset, metadata.Latency, humanSize(metadata.Size))
+			}).Printf("%s\t| %s | %s%d%s | %v | %s", metadata.Path, metadata.Method, statusColor, metadata.Status, engine.ResetColour, metadata.Latency, engine.HumanSize(metadata.Size))
 		}()
 
 		// Serve
@@ -91,7 +72,7 @@ func MetadataMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func FromContext(ctx *Context) (*RequestMetadata, bool) {
+func FromContext(ctx *engine.Context) (*RequestMetadata, bool) {
 	md, ok := ctx.Value(metadataCtxKey).(*RequestMetadata)
 	return md, ok
 }

@@ -1,14 +1,15 @@
 package engine
 
 import (
-	"github.com/julienschmidt/httprouter"
-	"github.com/mnbbrown/logger"
-	"golang.org/x/net/context"
 	"net/http"
 	"path"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"github.com/julienschmidt/httprouter"
+	"github.com/mnbbrown/logger"
+	"golang.org/x/net/context"
 )
 
 type MiddlewareFunc func(http.Handler) http.Handler
@@ -30,12 +31,6 @@ func (r *Router) ListMiddleware() (mi []string) {
 func NewRouter() *Router {
 	r := httprouter.New()
 	return &Router{mux: r}
-}
-
-func NewDefaultRouter() *Router {
-	router := NewRouter()
-	router.Use(MetadataMiddleware)
-	return router
 }
 
 func (r *Router) UseLogger(l *logger.Logger) {
