@@ -47,7 +47,7 @@ func Middleware(next http.Handler) http.Handler {
 			if err := recover(); err != nil {
 				buf := make([]byte, 1<<16)
 				stackSize := runtime.Stack(buf, true)
-				metadata.Logger().Debugf("%s", string(buf[0:stackSize]))
+				metadata.Logger().Errorf("%s", string(buf[0:stackSize]))
 				engine.JSONError(rw, errors.New("Ooops. Something went wrong on our end"), http.StatusInternalServerError)
 			}
 

@@ -2,6 +2,7 @@ package engine
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -15,6 +16,9 @@ func JSON(rw http.ResponseWriter, v interface{}, code int) {
 }
 
 func JSONError(rw http.ResponseWriter, err error, code int) {
+	if err == nil {
+		err = errors.New(http.StatusText(code))
+	}
 	JSON(rw, J{
 		"status_code": code,
 		"message":     err.Error(),
