@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/mnbbrown/logger"
 	"golang.org/x/net/context"
 )
 
@@ -18,7 +17,7 @@ type Router struct {
 	mux          *httprouter.Router
 	absolutePath string
 	middleware   []MiddlewareFunc
-	logger       *logger.Logger
+	NotFound     http.Handler
 }
 
 func (r *Router) ListMiddleware() (mi []string) {
@@ -33,8 +32,12 @@ func NewRouter() *Router {
 	return &Router{mux: r}
 }
 
-func (r *Router) UseLogger(l *logger.Logger) {
-	r.logger = l
+func (r *Router) SetNotFound(h http.Handler) {
+	r.mux.NotFound = h
+}
+
+func (r *Router) SetMethodNotAllowed(h http.Handler) {
+	r.mux.MethodNotAllowed = h
 }
 
 func (r *Router) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -47,9 +50,6 @@ func (r *Router) SubRouter(relativePath string, middleware ...MiddlewareFunc) *R
 		mux:          r.mux,
 		absolutePath: relativePath,
 		middleware:   middleware,
-	}
-	if r.logger != nil {
-		sr.UseLogger(r.logger)
 	}
 	return sr
 }
@@ -85,10 +85,6 @@ func (r *Router) UseHandler(handler http.Handler) {
 			next.ServeHTTP(rw, req)
 		})
 	})
-}
-
-func (r *Router) Next(handler http.Handler) {
-	r.mux.NotFound = http.HandlerFunc(handler.ServeHTTP)
 }
 
 func (r *Router) Handle(method, path string, handler http.Handler, middleware ...MiddlewareFunc) {
