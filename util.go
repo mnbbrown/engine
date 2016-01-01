@@ -37,7 +37,7 @@ func HumanSize(size int) string {
 func HumanSizeSuffix(size int) string {
 	suffix := "B"
 	postfixes := []string{"", "K", "M", "G", "T", "P", "E", "Z"}
-	for _, v := range postfixes {
+	for _, _ = range postfixes {
 		if math.Abs(float64(size)) < 1024.0 {
 			return suffix
 		}
