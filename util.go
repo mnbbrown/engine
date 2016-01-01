@@ -32,14 +32,14 @@ func ColourForStatus(code int) string {
 // HumanSize returns a human representation of a bytes size as a string
 func HumanSize(size int) string {
 	suffix := HumanSizeSuffix(size)
-	return fmt.Sprintf("%d %s%s", size, "Y", suffix)
+	return fmt.Sprintf("%d %s", size, suffix)
 }
 func HumanSizeSuffix(size int) string {
 	suffix := "B"
 	postfixes := []string{"", "K", "M", "G", "T", "P", "E", "Z"}
 	for _, v := range postfixes {
 		if math.Abs(float64(size)) < 1024.0 {
-			return fmt.Sprintf("%d %s%s", size, v, suffix)
+			return suffix
 		}
 		size /= 1024.0
 	}
