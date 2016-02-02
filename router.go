@@ -89,11 +89,11 @@ func (r *Router) UseHandler(handler http.Handler) {
 
 func (r *Router) Handle(method, path string, handler http.Handler, middleware ...MiddlewareFunc) {
 	absolutePath := r.calculateAbsolutePath(path)
-	for i := len(r.middleware) - 1; i >= 0; i-- {
-		handler = r.middleware[i](handler)
-	}
 	for i := len(middleware) - 1; i >= 0; i-- {
 		handler = middleware[i](handler)
+	}
+	for i := len(r.middleware) - 1; i >= 0; i-- {
+		handler = r.middleware[i](handler)
 	}
 	r.mux.Handle(method, absolutePath, wrap(handler))
 }
