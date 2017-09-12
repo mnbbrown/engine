@@ -8,19 +8,6 @@ import (
 	"sync"
 )
 
-func GetContext(req *http.Request) *Context {
-	ctx, ok := req.Body.(*Context)
-	if !ok {
-		ctx = &Context{
-			ReadCloser: req.Body,
-			Context:    context.Background(),
-			store:      make(map[interface{}]interface{}),
-		}
-		req.Body = ctx
-	}
-	return ctx
-}
-
 type Context struct {
 	context.Context
 	io.ReadCloser
@@ -47,4 +34,17 @@ func (c *Context) Value(key interface{}) interface{} {
 	}
 	c.mutex.RUnlock()
 	return c.Context.Value(key)
+}
+
+func GetContext(req *http.Request) *Context {
+	ctx, ok := req.Body.(*Context)
+	if !ok {
+		ctx = &Context{
+			ReadCloser: req.Body,
+			Context:    context.Background(),
+			store:      make(map[interface{}]interface{}),
+		}
+		req.Body = ctx
+	}
+	return ctx
 }

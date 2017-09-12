@@ -1,14 +1,16 @@
 package engine
 
 import (
+	"bufio"
+	"errors"
+	"github.com/julienschmidt/httprouter"
+	"golang.org/x/net/context"
+	"net"
 	"net/http"
 	"path"
 	"reflect"
 	"runtime"
 	"strings"
-
-	"github.com/julienschmidt/httprouter"
-	"golang.org/x/net/context"
 )
 
 type MiddlewareFunc func(http.Handler) http.Handler
@@ -17,7 +19,6 @@ type Router struct {
 	mux          *httprouter.Router
 	absolutePath string
 	middleware   []MiddlewareFunc
-	NotFound     http.Handler
 }
 
 func (r *Router) ListMiddleware() (mi []string) {
@@ -27,9 +28,15 @@ func (r *Router) ListMiddleware() (mi []string) {
 	return mi
 }
 
+func notFound(rw http.ResponseWriter, req *http.Request) {
+	JSON(rw, J{"status_code": http.StatusNotFound, "message": http.StatusText(http.StatusNotFound)}, http.StatusNotFound)
+	return
+}
+
 func NewRouter() *Router {
 	r := httprouter.New()
-	return &Router{mux: r}
+	r.NotFound = MetadataMiddleware(http.HandlerFunc(notFound))
+	return &Router{mux: r, middleware: []MiddlewareFunc{MetadataMiddleware}}
 }
 
 func (r *Router) SetNotFound(h http.Handler) {
@@ -153,6 +160,14 @@ type ResponseWriter struct {
 	status int
 	size   int
 	http.ResponseWriter
+}
+
+func (w *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
+	}
+	return hijacker.Hijack()
 }
 
 func (s *ResponseWriter) Status() int {
